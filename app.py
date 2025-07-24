@@ -3,7 +3,7 @@ import time
 import copy
 
 
-# Clean up player data
+# Clean up player data, return player
 def clean_data(player):
     player['height'] = int(player['height'].split(' ')[0])  # drop inches and convert to int
     player['guardians'] = player['guardians'].split(' and ')  # convert guardians to list
@@ -12,45 +12,66 @@ def clean_data(player):
     player['experience'] = bool(player['experience'])  # convert experience to bool
     return player
 
-# TODO: Balance Teams Function
-#   balance players across the 3 teams
-#   teams should have the same number of total players
+
+# Deep copy TEAMS into list of dicts, then fill teams with experienced players, then fill teams with inexperienced players
+# Return filled teams
+def balance_teams(players):
+    teams = [{"name": team, "players": []} for team in copy.deepcopy(TEAMS)]
+    experienced = [player for player in players if player['experience'] == True]
+    inexperienced = [player for player in players if player['experience'] == False]
+    while experienced:
+        for team in teams:
+            team['players'].append(experienced.pop())
+    while inexperienced:
+        for team in teams:
+            team['players'].append(inexperienced.pop())
+    return teams
+
+# Format all player names and guardians into flat lists, get team size, get number of experienced players, calculate average height of team
+# Print stats in clean, easy to read format
+def display_stats(team):
+    # build a list for player in team players, for guardians in player guardians
+    # syntax is the list you want, outloop, inner loop
+    guardian_list = [guardians for player in team['players'] for guardians in player['guardians']]
+    player_list = [player['name'] for player in team['players']]
+    team_size = len(player_list)
+    experienced = len([player for player in team['players'] if player['experience']])
+    avg_height = sum([player['height'] for player in team['players']])/team_size
+    
+    print(f'''
 
 
-# TODO: Additional Team Balancing
-#   balance team so that each team has the same number of experienced vs inexperienced
-#   if done correctly, each team's stats should display the same count for experienced total and inexperienced total, as well as the same number of players on the team
+{team['name'].upper()} STATS
+-------------------------------------------
 
-def balance_teams():
-    pass
+Total Players: {team_size}
+Total Experienced: {experienced}
+Total Inexperienced: {team_size - experienced}
 
-# TODO: Console Readability
-#   when the menu or stats display to the console, it should be in a nice readable format
+Average Height: {round(avg_height,2)} inches
 
-# TODO: Displaying Stats
-#   when displaying the selected team's stats, include:
-#   Team's name (str)
-#   Total Players (int)
-#   Player names, separated by commas (strs)
+Players on Team:
+    {', '.join(player_list)}
 
-# TODO: Additional Stats
-#   the number of inexperienced players on the team
-#   the number of experienced players on the team
-#   average height of the team
-#   guardians of all players on the team as a comma separated string
+Guardians:
+    {', '.join(guardian_list)}
 
-def display_stats(choice):
-    input('Press Enter to continue...')
+    ''')
 
 
+# Display team menu options and return user's choice
 def team_menu():
+    teams = copy.deepcopy(TEAMS)
     print(f'''
 ==== TEAMS ====
-    
+A) {teams[0]}
+B) {teams[1]}
+C) {teams[2]}
         ''')
     return input('> Enter an option:  ').lower()
 
 
+# Display main menu options and return user's choice
 def main_menu():
     print('''
 ==== MENU ====
@@ -60,6 +81,7 @@ B) Quit
     return input('> Enter an option (A/B):  ').lower()
 
 
+# Control flow of app
 def main():
     print('''
           Basketball Team Stats
@@ -67,6 +89,7 @@ def main():
     ''')
 
     players = [clean_data(player) for player in copy.deepcopy(PLAYERS)]
+    balanced_teams = balance_teams(players)
 
     main_error = True
     while main_error:
@@ -82,8 +105,14 @@ def main():
             while team_error:
                 team_selection = team_menu()
                 if team_selection in 'abc':
-                    display_stats(team_selection)
+                    if team_selection == 'a':
+                        display_stats(balanced_teams[0])
+                    elif team_selection == 'b':
+                        display_stats(balanced_teams[1])
+                    elif team_selection == 'c':
+                        display_stats(balanced_teams[2])
                     team_error = False
+                    time.sleep(2)
                 else:
                     print('\n xxx Invalid option. Please try again. xxx')
                     time.sleep(1)
